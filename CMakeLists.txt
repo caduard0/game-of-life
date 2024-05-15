@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project("minceraft" VERSION 0.1)
+project("game-of-life" VERSION 0.1)
 
 find_package(OpenGL REQUIRED)
 
@@ -24,5 +24,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/
 target_include_directories(${PROJECT_NAME} PRIVATE "${PRIVATE_INCLUDE}")
 target_include_directories(${PROJECT_NAME} PRIVATE "${OPENGL_INCLUDE_DIRS}")
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw glad)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw glad "-static" "-static-libstdc++" "-static-libstdc++")
+
 

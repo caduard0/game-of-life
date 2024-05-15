@@ -1,4 +1,4 @@
 @echo off
 cls
 cd build
-minceraft.exe
+game-of-life.exe

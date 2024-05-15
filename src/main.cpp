@@ -1,22 +1,18 @@
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 
-#include "aliases.hpp"
-#include "window.hpp"
-
 #include <cstdint>
-#include <iostream>
+#include <random>
+
+const uint32_t sizex = 1024;
+const uint32_t sizey = 1024;
 
 const char* vertex_frame = 
 "#version 420 core \n"
 
 "layout (location = 0) in vec2 a_Position; \n"
 
-"out vec2 TexCoords; \n"
-
 "void main() { \n"
-"   TexCoords = 0.5*(a_Position + vec2(1)); \n"
-
 "   gl_Position = vec4(a_Position.xy, 0, 1); \n"
 "};";
 
@@ -25,20 +21,22 @@ const char* fragment_frame =
 
 "layout (location = 0) out vec4 o_Color; \n"
 
-"in vec2 TexCoords; \n"
-
 "layout (binding = 0) uniform sampler2D screenTexture; \n"
 "layout (binding = 1) uniform sampler2D screenTexture1; \n"
 
-"   ; \n"
+"uniform vec2 size; "
 
 "void main() { \n"
+"   float lookup[9*2] = float[]( "
+"       0, 0, 0, 1, 0, 0, 0, 0, 0,"
+"       0, 0, 1, 1, 0, 0, 0, 0, 0 "
+"   ); \n"
+
 "   vec2 offset[8] = vec2[]( \n"
 "       vec2(-1, -1), \n"
 "       vec2( 0, -1), \n"
 "       vec2( 1, -1), \n"
 "       vec2(-1,  0), \n"
-//"       vec2( 0,  0), \n"
 "       vec2( 1,  0), \n"
 "       vec2(-1,  1), \n"
 "       vec2( 0,  1), \n"
@@ -48,26 +46,18 @@ const char* fragment_frame =
 "   vec3 sampleTex[8]; \n"
 
 "   for (int i = 0; i < 8; i++) { \n"
-"       sampleTex[i] = vec3(texture(screenTexture, (gl_FragCoord.xy + offset[i])/64.0)); \n"
+"       sampleTex[i] = vec3(texture(screenTexture, (gl_FragCoord.xy + offset[i]) / size)); \n"
 "   } \n"
 
-"   float n = 0; \n"
+"   int n = 0; \n"
 "   for (int i = 0; i < 8; i++) { \n"
-"       n += sampleTex[i].r; \n"
+"       n += int(sampleTex[i].r); \n"
 "   } \n"
 
-"   float c = texture(screenTexture, gl_FragCoord.xy/64.0).r; \n"
-"   float color = 0; \n"
-"   if (c == 1 && (n == 2 || n == 3)) color = 1; \n"
-"   else if (c == 0 && n == 3) color = 1; \n"
+"   float c = texture(screenTexture, gl_FragCoord.xy / size).r; \n"
+"   float color = lookup[int(c)*9 + n]; \n"
 
-"   ; \n"
 "   o_Color = vec4(color, color, color, 1); \n"
-//"   o_Color = vec4(c, c, c, 1); \n"
-//"   o_Color = texture(screenTexture, (gl_FragCoord.xy + offset[4])/64.0); \n"
-
-//"   o_Color = texture(screenTexture, TexCoords); \n"
-//"   o_Color = vec4(gl_FragCoord.xy/64.0, 0, 1); \n"
 "};";
 
 const char* vertex_quad = 
@@ -97,15 +87,37 @@ const char* fragment_quad =
 "   o_Color = texture(screenTexture1, TexCoords); \n"
 "};";
 
-
 int main() {
     if (!glfwInit()) return -1;
+
+
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+
+    const GLFWvidmode * mode = glfwGetVideoMode(monitor);
+
+    uint32_t width = mode->width;
+    uint32_t height = mode->height;
+
+    uint32_t sizex = width;
+    uint32_t sizey = height;
+
+    GLFWwindow* window(glfwCreateWindow(width, height, "oie", monitor, nullptr));
+
+    glfwMakeContextCurrent(window);
+    glfwSwapInterval(0);
+
+    int version = gladLoadGL(glfwGetProcAddress);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
+
+    glClearColor(0, 0, 0, 1);
     
-    u32 width = 1000;
-    u32 height = 1000;
-
-    Window window(width, height, ">:)", false);
-
     uint32_t vao,
              vbo,
              ibo;
@@ -134,7 +146,7 @@ int main() {
     glNamedBufferData(vbo, 8 * sizeof(float), &vertices[0], GL_STATIC_DRAW);
     glNamedBufferData(ibo, 6 * sizeof(uint32_t), &indices[0], GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     uint32_t program = glCreateProgram();
@@ -157,6 +169,7 @@ int main() {
     GLint is_compiled;
     
     glGetShaderiv(vert, GL_COMPILE_STATUS, &is_compiled);
+    /*
     if (is_compiled != GL_TRUE)
         std::cout << "vert fuck" << std::endl;
     
@@ -167,6 +180,7 @@ int main() {
     glGetProgramiv(program, GL_LINK_STATUS, &is_compiled);
     if (is_compiled != GL_TRUE)
         std::cout << "link fuck" << std::endl;
+    */
 
     glDeleteShader(vert);
     glDeleteShader(frag);
@@ -186,6 +200,7 @@ int main() {
 
     glLinkProgram(program_frame);
     
+    /*
     glGetShaderiv(vert, GL_COMPILE_STATUS, &is_compiled);
     if (is_compiled != GL_TRUE)
         std::cout << "vert f fuck" << std::endl;
@@ -197,7 +212,9 @@ int main() {
     glGetProgramiv(program, GL_LINK_STATUS, &is_compiled);
     if (is_compiled != GL_TRUE)
         std::cout << "link f fuck" << std::endl;
+    */
 
+    
     glDeleteShader(vert);
     glDeleteShader(frag);
 
@@ -215,16 +232,21 @@ int main() {
         uint8_t r, g, b;
     };
 
-    uint32_t sizex = 64;
-    uint32_t sizey = 64;
-
     rgb* startingImage = new rgb[sizex * sizey];
+
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist2(0,1); // distribution in range [1, 6]
 
     for(int y = 0; y < sizey; y++) {
         for(int x = 0; x < sizex; x++) {
-            startingImage[y*sizex + x] = {0, 0, 0};
+            if (dist2(rng))
+                startingImage[y*sizex + x] = {255, 255, 255};
+            else
+                startingImage[y*sizex + x] = {0, 0, 0};
         }
     }
+
     startingImage[30*sizex + 30] = {255, 255, 255};
     startingImage[30*sizex + 31] = {255, 255, 255};
     startingImage[30*sizex + 32] = {255, 255, 255};
@@ -251,24 +273,27 @@ int main() {
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
 
+    /*
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    */
 
-    float step = 0.01f;
+    float step = 0.0;
 
     double last = glfwGetTime();
 
+    int size_location = glGetUniformLocation(program_frame, "size");
     
-    while (!window.should_close()) {
+    while (!glfwWindowShouldClose(window)) {
+        double current = glfwGetTime();
         /*
         */
-        double current = glfwGetTime();
         if (current - last > step) {
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
         glUseProgram(program_frame);
-        //glBindTexture(GL_TEXTURE_2D, tex);
+        glUniform2f(size_location, sizex, sizey);
 
         glDrawElements(GL_TRIANGLES, 2*3, GL_UNSIGNED_INT, nullptr);
 
@@ -281,14 +306,14 @@ int main() {
         }
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        window.clear();
+        glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(program);
-        //glBindTexture(GL_TEXTURE_2D, tex);
         glDrawElements(GL_TRIANGLES, 2*3, GL_UNSIGNED_INT, nullptr);
 
 
-        window.update();
+        glfwSwapBuffers(window);
+        glfwPollEvents();
     }
 
     glDeleteBuffers(1, &vbo);
@@ -300,6 +325,11 @@ int main() {
     glDeleteProgram(program);
 
     glDeleteFramebuffers(1, &fbo);
+
+    glDeleteTextures(1, &tex);
+    glDeleteTextures(1, &tex1);
+
+    glfwTerminate();
 
     return 0;
 }
