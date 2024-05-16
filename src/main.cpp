@@ -4,8 +4,12 @@
 #include <cstdint>
 #include <random>
 
-const uint32_t sizex = 1024;
-const uint32_t sizey = 1024;
+//#define FULLSCREEN
+
+const uint32_t SIZEX = 1024;
+const uint32_t SIZEY = 1024;
+
+const float FPS = 30;
 
 const char* vertex_frame = 
 "#version 420 core \n"
@@ -90,16 +94,25 @@ const char* fragment_quad =
 int main() {
     if (!glfwInit()) return -1;
 
+    uint32_t sizex = SIZEX;
+    uint32_t sizey = SIZEY;
+    
+    uint32_t width = sizex;
+    uint32_t height = sizey;
 
-    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    GLFWmonitor* monitor = nullptr;
+
+#ifdef FULLSCREEN
+    monitor = glfwGetPrimaryMonitor();
 
     const GLFWvidmode * mode = glfwGetVideoMode(monitor);
 
-    uint32_t width = mode->width;
-    uint32_t height = mode->height;
+    width = mode->width;
+    height = mode->height;
 
-    uint32_t sizex = width;
-    uint32_t sizey = height;
+    sizex = width;
+    sizey = height;
+#endif
 
     GLFWwindow* window(glfwCreateWindow(width, height, "oie", monitor, nullptr));
 
@@ -279,7 +292,7 @@ int main() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     */
 
-    float step = 0.0;
+    float step = FPS == 0 ? 0 : 1.0/FPS;
 
     double last = glfwGetTime();
 

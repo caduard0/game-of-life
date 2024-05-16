@@ -14,14 +14,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(${PROJECT_NAME})
 
 file(GLOB_RECURSE EXEC_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
-file(GLOB_RECURSE PRIVATE_INCLUDE CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
 
 target_sources(${PROJECT_NAME} PRIVATE "${EXEC_SOURCES}")
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/gmtl/include")
 
-target_include_directories(${PROJECT_NAME} PRIVATE "${PRIVATE_INCLUDE}")
 target_include_directories(${PROJECT_NAME} PRIVATE "${OPENGL_INCLUDE_DIRS}")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE glfw glad "-static" "-static-libstdc++" "-static-libstdc++")
